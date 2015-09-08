@@ -5,11 +5,9 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 // https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=manuf
@@ -187,8 +185,7 @@ type OuiDb struct {
 	dict   [][]byte
 	Blocks []AddressBlock
 
-	t    map[int]t2
-	Test t2
+	t map[int]t2
 }
 
 // Lookup finds the OUI the address belongs to
@@ -217,21 +214,33 @@ func (m *OuiDb) Load(path string) error {
 		return (err)
 	}
 
+	fieldsRe := regexp.MustCompile(`^(\S+)\t+(\S+)(\s+#\s+(\S.*))?`)
+
+	re := regexp.MustCompile(`((?:(?:[0-9a-zA-Z]{2})[-:]){2,5}(?:[0-9a-zA-Z]{2}))(?:/(\w{1,2}))?`)
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		if len(scanner.Text()) == 0 || scanner.Text()[0] == '#' {
-			continue
-		}
-
-		re := regexp.MustCompile(`((?:(?:[0-9a-zA-Z]{2})[-:]){2,5}(?:[0-9a-zA-Z]{2}))(?:/(\w{1,2}))?`)
-		arr := strings.Split(scanner.Text(), "\t")
-
-		matches := re.FindAllStringSubmatch(arr[0], -1)
-		if len(matches) == 0 {
+		text := scanner.Text()
+		if text == "" || text[0] == '#' || text[0] == '\t' {
 			continue
 		}
 
 		block := AddressBlock{}
+
+		// Split input text into address, short organization name
+		// and full organization name
+		fields := fieldsRe.FindAllStringSubmatch(text, -1)
+		addr := fields[0][1]
+		if fields[0][4] != "" {
+			block.Organization = fields[0][4]
+		} else {
+			block.Organization = fields[0][2]
+		}
+
+		matches := re.FindAllStringSubmatch(addr, -1)
+		if len(matches) == 0 {
+			continue
+		}
 
 		s := matches[0][1]
 
@@ -245,9 +254,8 @@ func (m *OuiDb) Load(path string) error {
 			block.Mask, err = strconv.Atoi(s[i+1:])
 		}
 
-		fmt.Println("OUI:", block.Oui, block.Mask, err)
+		//fmt.Println("OUI:", block.Oui, block.Mask, err)
 
-		block.Organization = arr[1]
 		m.Blocks = append(m.Blocks, block)
 
 		// create smart map
@@ -293,7 +301,7 @@ type AddressBlock struct {
 
 // Contains reports whether the mac address belongs to the OUI
 func (b *AddressBlock) Contains(address HardwareAddr) bool {
-	fmt.Println("%v %v %v %v", b.Oui, len(b.Oui), address.Mask(CIDRMask(b.Mask, len(b.Oui)*8)), CIDRMask(b.Mask, len(b.Oui)*8))
+	//fmt.Println("%v %v %v %v", b.Oui, len(b.Oui), address.Mask(CIDRMask(b.Mask, len(b.Oui)*8)), CIDRMask(b.Mask, len(b.Oui)*8))
 
 	return (bytes.Equal(address.Mask(CIDRMask(b.Mask, len(b.Oui)*8)), b.Oui))
 }
