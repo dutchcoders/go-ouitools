@@ -14,6 +14,8 @@ import (
 // Bigger than we need, not too big to worry about overflow
 const big = 0xFFFFFF
 
+var ErrInvalidMACAddress = errors.New("invalid MAC address")
+
 // Hexadecimal to integer starting at &s[i0].
 // Returns number, new offset, success.
 func xtoi(s string, i0 int) (n int, i int, ok bool) {
@@ -102,7 +104,7 @@ func ParseOUI(s string, size int) (hw HardwareAddr, err error) {
 	return hw, nil
 
 error:
-	return nil, errors.New("invalid MAC address: " + s)
+	return nil, ErrInvalidMACAddress
 }
 
 // ParseMAC parses s as an IEEE 802 MAC-48, EUI-48, or EUI-64 using one of the
@@ -197,6 +199,19 @@ func (m *OuiDb) Lookup(address HardwareAddr) *AddressBlock {
 	}
 
 	return nil
+}
+
+// VendorLookup obtains the vendor organization name from the MAC address s.
+func (m *OuiDb) VendorLookup(s string) (string, error) {
+	addr, err := ParseMAC(s)
+	if err != nil {
+		return "", err
+	}
+	block := m.Lookup(addr)
+	if block == nil {
+		return "", ErrInvalidMACAddress
+	}
+	return block.Organization, nil
 }
 
 func byteIndex(s string, c byte) int {

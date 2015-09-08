@@ -17,15 +17,14 @@ func init() {
 }
 
 func lookup(t *testing.T, mac, org string) {
-	address, err := ParseMAC(mac)
+	v, err := db.VendorLookup(mac)
 	if err != nil {
-		t.Fatalf("parse: %s", mac)
+		t.Fatalf("parse: %s: %s", mac, err.Error())
 	}
-	o := db.Lookup(address).Organization
-	if o != org {
-		t.Fatalf("lookup: input %s, expect %s, got %s", mac, org, o)
+	if v != org {
+		t.Fatalf("lookup: input %s, expect %s, got %s", mac, org, v)
 	}
-	fmt.Printf("    %s => %s\n", mac, o)
+	fmt.Printf("    %s => %s\n", mac, v)
 }
 
 func TestLookup1(t *testing.T) {
