@@ -190,6 +190,15 @@ type OuiDb struct {
 	t map[int]t2
 }
 
+// New returns a new OUI database loaded from the specified file.
+func New(file string) *OuiDb {
+	db := &OuiDb{}
+	if err := db.Load(file); err != nil {
+		return nil
+	}
+	return db
+}
+
 // Lookup finds the OUI the address belongs to
 func (m *OuiDb) Lookup(address HardwareAddr) *AddressBlock {
 	for _, block := range m.Blocks {

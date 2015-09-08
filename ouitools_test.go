@@ -2,21 +2,15 @@
 package ouidb
 
 import (
-	"fmt"
 	"testing"
 )
 
-var db OuiDb
-
-func init() {
-	db = OuiDb{}
-	err := db.Load("oui.txt")
-	if err != nil {
-		panic(err.Error())
-	}
-}
+var db *OuiDb
 
 func lookup(t *testing.T, mac, org string) {
+	if db == nil {
+		t.Fatal("database not initialized")
+	}
 	v, err := db.VendorLookup(mac)
 	if err != nil {
 		t.Fatalf("parse: %s: %s", mac, err.Error())
@@ -24,7 +18,28 @@ func lookup(t *testing.T, mac, org string) {
 	if v != org {
 		t.Fatalf("lookup: input %s, expect %s, got %s", mac, org, v)
 	}
-	fmt.Printf("    %s => %s\n", mac, v)
+	t.Logf("%s => %s\n", mac, v)
+}
+
+func TestInitialization(t *testing.T) {
+	db = New("oui.txt")
+	if db == nil {
+		t.Fatal("can't load database file oui.txt")
+	}
+}
+
+func TestMissingDBFile(t *testing.T) {
+	db := New("bad-file")
+	if db != nil {
+		t.Fatal("didn't return nil on missing file")
+	}
+}
+
+func TestInvalidDBFile(t *testing.T) {
+	db := New("ouidb_test.go")
+	if db != nil {
+		t.Fatal("didn't return nil on bad file")
+	}
 }
 
 func TestLookup1(t *testing.T) {
