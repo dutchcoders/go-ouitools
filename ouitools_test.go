@@ -1,5 +1,5 @@
 // Package go-oui provides functions to work with MAC and OUI's
-package ouitools
+package ouidb
 
 import (
 	"fmt"
