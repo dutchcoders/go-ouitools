@@ -3,31 +3,39 @@ package ouidb
 
 import (
 	"fmt"
-	"log"
 	"testing"
 )
 
-func Test(*testing.T) {
-	d := &OuiDb{}
-	err := d.Load("oui.txt")
+var db OuiDb
 
+func init() {
+	db = OuiDb{}
+	err := db.Load("oui.txt")
 	if err != nil {
-		log.Fatal("Error %v", err)
+		panic(err.Error())
 	}
+}
 
-	address, _ := ParseMAC("60:03:08:a0:ec:a6")
-	block := d.Lookup(address)
+func lookup(t *testing.T, mac, org string) {
+	address, err := ParseMAC(mac)
+	if err != nil {
+		t.Fatalf("parse: %s", mac)
+	}
+	o := db.Lookup(address).Organization
+	if o != org {
+		t.Fatalf("lookup: input %s, expect %s, got %s", mac, org, o)
+	}
+	fmt.Printf("    %s => %s\n", mac, o)
+}
 
-	fmt.Println("bla %v", block)
+func TestLookup1(t *testing.T) {
+	lookup(t, "60:03:08:a0:ec:a6", "Apple, Inc.")
+}
 
-	address, _ = ParseMAC("00:25:9c:42:c2:62")
-	block = d.Lookup(address)
+func TestLookup2(t *testing.T) {
+	lookup(t, "00:25:9c:42:c2:62", "Cisco-Linksys, LLC")
+}
 
-	fmt.Println("Bla %v", block)
-
-	address, _ = ParseMAC("00:16:e0:3d:f4:4c")
-	block = d.Lookup(address)
-
-	fmt.Println("Bla %v", block)
-
+func TestLookup3(t *testing.T) {
+	lookup(t, "00:16:e0:3d:f4:4c", "3Com Ltd")
 }
